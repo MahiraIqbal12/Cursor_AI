@@ -1,69 +1,85 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { Sidebar } from "@/components/Sidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { BookOpen } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
-const enrolledCourses = [
-  { title: "Financial Literacy 101", progress: "60%" },
-  { title: "Advanced Investing", progress: "30%" },
-];
+type EnrolledCourse = {
+  courses: {
+    id: string;
+    title: string;
+    slug: string | null;
+    description: string | null;
+  } | null;
+};
 
-export default function DashboardCoursesPage() {
+export default async function DashboardCoursesPage() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  let enrolled: EnrolledCourse[] = [];
+
+  if (session?.user) {
+    const { data } = await supabase
+      .from("enrollments")
+      .select("courses ( id, title, slug, description )")
+      .eq("user_id", session.user.id);
+
+    if (Array.isArray(data)) {
+      enrolled = data as unknown as EnrolledCourse[];
+    }
+  }
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <DashboardSidebar />
       <div className="flex-1 p-6 lg:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-2xl font-bold text-white sm:text-3xl">
             My Courses
           </h1>
           <p className="mt-1 text-slate-400">
             Track your learning progress across Nexus Finance courses.
           </p>
-        </motion.div>
-
-        <div className="grid gap-6 sm:grid-cols-2">
-          {enrolledCourses.map((course, index) => (
-            <motion.div
-              key={course.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-light rounded-xl border border-white/10 p-6"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">
-                    {course.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Continue where you left off.
-                  </p>
-                </div>
-                <BookOpen className="text-emerald-500/80" size={24} />
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm text-slate-400">
-                  <span>Progress</span>
-                  <span className="font-semibold text-emerald-400">
-                    {course.progress}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                    style={{ width: course.progress }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ))}
         </div>
+
+        {enrolled.length === 0 && (
+          <p className="text-slate-400">No enrolled courses yet.</p>
+        )}
+
+        {enrolled.length > 0 && (
+          <div className="grid gap-6 sm:grid-cols-2">
+            {enrolled.map((row, index) => {
+              const course = row.courses;
+              if (!course) return null;
+              return (
+                // <<motion.div
+                //   key={course.id}
+                //   initial={{ opacity: 0, y: 20 }}
+                //   animate={{ opacity: 1, y: 0 }}
+                //   transition={{ delay: index * 0.1 }}
+                //   className="glass-light rounded-xl border border-white/10 p-6"
+                // >
+                <div key={course.id} className="glass-light rounded-xl border border-white/10 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">
+                        {course.title}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {course.description ??
+                          "You are enrolled in this course. New content will appear here as you progress."}
+                      </p>
+                    </div>
+                    <BookOpen className="text-emerald-500/80" size={24} />
+                  </div>
+                {/* </motion.div> */}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

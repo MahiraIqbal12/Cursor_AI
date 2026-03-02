@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { ADMIN_EMAILS } from "@/lib/auth";
 
 // Rate limit placeholder - implement with Redis/Upstash in production
 const RATE_LIMIT_WINDOW_MS = 60000;
@@ -31,17 +32,27 @@ export async function proxy(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+  const pathname = request.nextUrl.pathname;
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isAdminRoute = pathname.startsWith("/dashboard/admin");
 
-  // Protect dashboard routes
+  // Protect all dashboard routes
   if (isDashboard && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Role-based protection placeholder:
-  // In production:
-  // - Extract role from session.user.user_metadata.role
-  // - Restrict admin-only routes accordingly
+  const email = session?.user?.email ?? null;
+  const normalizedEmail = email?.toLowerCase() ?? null;
+  const isAdmin =
+    !!normalizedEmail &&
+    ADMIN_EMAILS.some(
+      (adminEmail) => adminEmail.toLowerCase() === normalizedEmail
+    );
+
+  // Protect /dashboard/admin for admin-only access
+  if (isAdminRoute && !isAdmin) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   return response;
 }

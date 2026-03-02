@@ -6,6 +6,8 @@
 
 export type UserRole = "student" | "admin";
 
+export const ADMIN_EMAILS: string[] = ["mahi.khuwaja@gmail.com"];
+
 export async function getSession(): Promise<{ user: { id: string; email?: string } | null }> {
   // Placeholder - integrate Supabase auth
   return { user: null };

@@ -1,4 +1,5 @@
-import { generateAIResponse, type ChatMessage } from "@/lib/ai";
+import { generateAIResponse, SYSTEM_PROMPT, type ChatMessage } from "@/lib/ai";
+import { createClient } from "@/lib/supabase/server";
 
 const MAX_INPUT_LENGTH = 2000;
 const MAX_TOKENS = 500;
@@ -27,6 +28,10 @@ const BLOCKED_PATTERNS = [
   /act\s+as\s+if\s+you\s+are/i,
   /pretend\s+you\s+are/i,
   /role\s+play\s+as/i,
+  /bypass\s+rules?/i,
+  /bypass\s+(safety|restrictions|constraints)/i,
+  /ignore\s+(safety|safeguards|guardrails)/i,
+  /developer\s+mode/i,
 ];
 
 function sanitizeInput(input: string): string {
@@ -43,6 +48,23 @@ function isBlocked(input: string): boolean {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      const response: ChatErrorResponse = {
+        success: false,
+        data: null,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "You must be signed in to use the AI tutor.",
+        },
+      };
+      return Response.json(response, { status: 401 });
+    }
+
     const body = (await request.json()) as unknown;
 
     if (
@@ -59,7 +81,7 @@ export async function POST(request: Request) {
           message: "Message is required.",
         },
       };
-      return Response.json<ChatApiResponse>(response, { status: 400 });
+      return Response.json(response, { status: 400 });
     }
 
     const rawMessage = (body as { message: string }).message;
@@ -73,7 +95,7 @@ export async function POST(request: Request) {
           message: "Please enter a question or topic.",
         },
       };
-      return Response.json<ChatApiResponse>(response, { status: 400 });
+      return Response.json(response, { status: 400 });
     }
 
     if (isBlocked(rawMessage)) {
@@ -88,10 +110,10 @@ export async function POST(request: Request) {
         error: {
           code: "GUARDRAIL_BLOCKED",
           message:
-            "I can only follow my built-in safety rules and help with finance-related questions.",
+            "I can only follow built-in safety rules and help with finance-related questions.",
         },
       };
-      return Response.json<ChatApiResponse>(response, { status: 400 });
+      return Response.json(response, { status: 400 });
     }
 
     const sanitized = sanitizeInput(rawMessage);
@@ -116,6 +138,10 @@ export async function POST(request: Request) {
       .slice(-10);
 
     const messages: ChatMessage[] = [
+      {
+        role: "system",
+        content: SYSTEM_PROMPT,
+      },
       ...historyMessages,
       {
         role: "user",
@@ -145,7 +171,7 @@ export async function POST(request: Request) {
       error: null,
     };
 
-    return Response.json<ChatApiResponse>(response);
+    return Response.json(response);
   } catch (error) {
     console.error("[Chat] Unexpected error", {
       message: error instanceof Error ? error.message : "Unknown error",
@@ -160,6 +186,6 @@ export async function POST(request: Request) {
       },
     };
 
-    return Response.json<ChatApiResponse>(response, { status: 500 });
+    return Response.json(response, { status: 500 });
   }
 }
