@@ -8,8 +8,8 @@ const RATE_LIMIT_MAX_REQUESTS = 100;
 // Brute force mitigation: track failed auth attempts per IP
 // In production: use Redis, exponential backoff, CAPTCHA after N failures
 
-export function middleware(request: NextRequest) {
-  // Secure headers - add via next.config headers in production
+export function proxy(request: NextRequest) {
+  // Secure headers placeholder - prefer headers() in next.config for CSP, HSTS, etc.
   const response = NextResponse.next();
 
   // Role protection placeholder for /dashboard
@@ -18,9 +18,17 @@ export function middleware(request: NextRequest) {
   // In production: verify JWT from Supabase, check session
   const isAuthenticated = request.cookies.get("nexus-auth")?.value === "true";
 
+  // Session expiration placeholder:
+  // - Store an absolute expiry timestamp in a cookie (e.g. nexus-session-exp)
+  // - If the timestamp is in the past, treat the session as expired and clear auth cookies
+
   if (isDashboard && !isAuthenticated) {
     return NextResponse.redirect(new URL("/", request.url));
   }
+
+  // Role-based route protection placeholder:
+  // - Read a role claim from JWT or a secure cookie (e.g. nexus-role)
+  // - Restrict access to admin-only dashboard routes based on role
 
   return response;
 }
@@ -28,3 +36,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/dashboard/:path*"],
 };
+

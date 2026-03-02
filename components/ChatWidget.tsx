@@ -9,6 +9,12 @@ const DEFAULT_MESSAGE =
 
 type Message = { role: "user" | "assistant"; content: string };
 
+type ChatApiResponse = {
+  success: boolean;
+  data?: { content: string } | null;
+  error?: { code?: string; message: string } | null;
+};
+
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -37,19 +43,24 @@ export function ChatWidget() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed, history: messages }),
       });
-      const data = await res.json();
+      const data: ChatApiResponse = await res.json();
 
-      if (data.error) {
-        setMessages((m) => [
-          ...m,
-          { role: "assistant", content: data.error || "Something went wrong." },
+      if (!res.ok || !data.success || !data.data?.content) {
+        const fallback =
+          data.error?.message ||
+          "I'm having trouble responding right now. Please try again.";
+
+        setMessages((previous) => [
+          ...previous,
+          { role: "assistant", content: fallback },
         ]);
-      } else {
-        setMessages((m) => [
-          ...m,
-          { role: "assistant", content: data.content || "No response." },
-        ]);
+        return;
       }
+
+      setMessages((previous) => [
+        ...previous,
+        { role: "assistant", content: data.data?.content ?? "No response." },
+      ]);
     } catch {
       setMessages((m) => [
         ...m,
