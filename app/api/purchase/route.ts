@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getSession();
 
   if (!session?.user) {
-    return Response.json<PurchaseResponse>(
+    return Response.json(
       { error: "Unauthorized" },
       { status: 401 }
     );
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     typeof body?.productId === "string" ? body.productId.trim() : "";
 
   if (!productId) {
-    return Response.json<PurchaseResponse>(
+    return Response.json(
       { error: "Invalid product" },
       { status: 400 }
     );
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (error) {
     // Handle unique constraint for duplicate purchase (e.g. 23505 in Postgres)
     if (error.code === "23505") {
-      return Response.json<PurchaseResponse>(
+      return Response.json(
         { error: "Already purchased" },
         { status: 200 }
       );
@@ -48,12 +48,12 @@ export async function POST(request: Request) {
       message: error.message,
     });
 
-    return Response.json<PurchaseResponse>(
+    return Response.json(
       { error: "Purchase failed" },
       { status: 500 }
     );
   }
 
-  return Response.json<PurchaseResponse>({ success: true });
+  return Response.json({ success: true });
 }
 
