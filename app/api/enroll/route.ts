@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
+
 type EnrollResponse =
   | { success: true }
   | { success: false; duplicate?: boolean };
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getSession();
 
   if (!session?.user) {
-    return Response.json<EnrollResponse>(
+    return Response.json(
       { success: false },
       { status: 401 }
     );
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     typeof body?.courseId === "string" ? body.courseId.trim() : "";
 
   if (!courseId) {
-    return Response.json<EnrollResponse>(
+    return Response.json(
       { success: false },
       { status: 400 }
     );
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
   if (error) {
     // Handle duplicate enrollment via unique constraint on (user_id, course_id)
     if (error.code === "23505") {
-      return Response.json<EnrollResponse>(
+      return Response.json(
         { success: false, duplicate: true },
         { status: 200 }
       );
@@ -49,12 +50,12 @@ export async function POST(request: Request) {
       message: error.message,
     });
 
-    return Response.json<EnrollResponse>(
+    return Response.json(
       { success: false },
       { status: 500 }
     );
   }
 
-  return Response.json<EnrollResponse>({ success: true });
+  return Response.json({ success: true });
 }
 
