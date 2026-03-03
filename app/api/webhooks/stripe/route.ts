@@ -12,12 +12,26 @@ export async function POST(request: NextRequest) {
 
     const event = await verifyWebhook(body, signature);
     if (!event) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid Stripe webhook signature." },
+        { status: 400 }
+      );
     }
+
+    // Duplicate transaction prevention placeholder:
+    // - Store event.id in a durable store with a unique constraint
+    // - Skip processing if the same event.id has already been handled
+
+    console.log("[Stripe] Webhook received", {
+      type: event.type,
+    });
 
     // Handle event types: checkout.session.completed, etc.
     return NextResponse.json({ received: true });
-  } catch {
+  } catch (error) {
+    console.error("[Stripe] Webhook error", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json({ error: "Webhook error" }, { status: 500 });
   }
 }
