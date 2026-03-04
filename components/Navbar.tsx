@@ -93,13 +93,13 @@ export function Navbar() {
 
         <div className="hidden md:flex md:items-center md:gap-8">
           {currentNavLinks.map((link) => (
-            <button
+            <Link
               key={link.href}
-              onClick={() => handleProtectedClick(link.href)}
+              href={link.href}
               className="text-slate-300 transition-colors hover:text-emerald-400"
             >
               {link.label}
-            </button>
+            </Link>
           ))}
           {isAuthenticated && (
             <button
