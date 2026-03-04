@@ -48,8 +48,8 @@ export function ChatWidget() {
       if (!res.ok || !data.success || !data.data?.content) {
         const fallback =
           data.error?.message ||
-          "I'm having trouble responding right now. Please try again.";
-
+          // "I'm having trouble responding right now. Please try again.";
+            "Hello! I'm your AI assistant. Please Login to ask questions about your finances, and I'll do my best to help you out.";
         setMessages((previous) => [
           ...previous,
           { role: "assistant", content: fallback },
